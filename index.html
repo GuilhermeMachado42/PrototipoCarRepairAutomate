@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CarRepairAutomate App</title>
+    <style>
+        :root {
+            --primary-color: #1a252f;
+            --accent-color: #3498db;
+            --alert-color: #e74c3c;
+            --success-color: #2ecc71;
+            --bg-color: #f0f2f5;
+            --text-color: #333;
+            --nav-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Remove o piscar azul ao tocar no celular */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            /* Espaço para a barra de navegação inferior não cobrir o conteúdo */
+            padding-bottom: 80px; 
+            padding-top: 60px;
+        }
+
+        /* Top Bar (Cabeçalho do App) */
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            margin: 0 auto;
+        }
+
+        /* Área de Conteúdo */
+        .app-content {
+            padding: 1rem;
+        }
+
+        /* Oculta as abas que não estão ativas */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        /* Status do Carro Mobile */
+        .car-status {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 1rem;
+            background: #fff3f3;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .status-icon {
+            font-size: 1.5rem;
+        }
+
+        .status-good {
+            background: #f0fdf4;
+        }
+
+        .status-title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .status-desc {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Elementos de Formulário Touch-Friendly */
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            background-color: #fafafa;
+        }
+
+        button.btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+        }
+
+        /* Bottom Navigation Bar (Barra Inferior Estilo App) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: var(--nav-bg);
+            display: flex;
+            justify-content: space-around;
+            padding: 0.8rem 0;
+            padding-bottom: calc(0.8rem + env(safe-area-inset-bottom)); /* Suporte para iPhone moderno */
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.05);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            z-index: 100;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            color: #95a5a6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            width: 25%;
+        }
+
+        .nav-item.active {
+            color: var(--accent-color);
+        }
+
+        .nav-icon {
+            font-size: 1.4rem;
+        }
+
+        /* Resumo do veículo no Home */
+        .car-hero {
+            text-align: center;
+            padding: 1rem 0;
+        }
+        .car-hero img {
+            width: 80%;
+            max-width: 250px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="width: 24px;"></div> <h1>CarRepairAutomate</h1>
+        <div style="font-size: 1.2rem;">🔔</div>
+    </header>
+
+    <div class="app-content">
+        
+        <div id="tab-home" class="tab-content">
+            <div class="card car-hero">
+                <h2>Honda Civic 2022</h2>
+                <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 10px;">Placa: ABC-1234</p>
+                <div style="font-size: 4rem; margin: 20px 0;">🚘</div>
+                <h3 style="color: var(--alert-color);">1 Alerta Encontrado</h3>
+                <p style="font-size: 0.9rem; margin-top: 5px;">Última sincronização: Há 2 min</p>
+            </div>
+            
+            <button class="btn-primary" onclick="switchTab('tab-diag')">Ver Detalhes do Veículo</button>
+        </div>
+
+        <div id="tab-diag" class="tab-content">
+            <h2>Status do Sistema</h2>
+            
+            <div class="car-status">
+                <div class="status-icon">⚠️</div>
+                <div>
+                    <span class="status-title" style="color: var(--alert-color);">Falha no Motor</span>
+                    <span class="status-desc">Sensor de oxigênio (Código P0135). Reparo recomendado imediatamente.</span>
+                </div>
+            </div>
+
+            <div class="car-status status-good">
+                <div class="status-icon">✅</div>
+                <div>
+                    <span class="status-title" style="color: var(--success-color);">Pressão dos Pneus</span>
+                    <span class="status-desc">Todos em 32 PSI. Calibragem perfeita.</span>
+                </div>
+            </div>
+
+            <div class="car-status status-good">
+                <div class="status-icon">🔋</div>
+                <div>
+                    <span class="status-title" style="color: var(--success-color);">Bateria</span>
+                    <span class="status-desc">Carga em 12.6V. Excelente estado.</span>
+                </div>
+            </div>
+            
+            <div class="car-status status-good">
+                <div class="status-icon">🛢️</div>
+                <div>
+                    <span class="status-title" style="color: var(--success-color);">Óleo do Motor</span>
+                    <span class="status-desc">Nível adequado. Próxima troca em 4.500 km.</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-agendar" class="tab-content">
+            <div class="card">
+                <h2>Agendar Oficina</h2>
+                <p style="font-size: 0.9rem; color: #666; margin-bottom: 1.5rem;">Selecione o serviço e uma oficina licenciada.</p>
+                
+                <form id="agendamentoForm">
+                    <div class="form-group">
+                        <label>Problema identificado</label>
+                        <select id="defeito" required>
+                            <option value="motor">⚠️ Sensor de Oxigênio (Urgente)</option>
+                            <option value="revisao">Revisão Geral</option>
+                            <option value="pneus">Troca de Pneus</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Oficina Credenciada (Mais próximas)</label>
+                        <select id="oficina" required>
+                            <option value="">Escolha a oficina...</option>
+                            <option value="oficina1">Auto Center Bosch (2.5 km)</option>
+                            <option value="oficina2">Mecânica Silva Premium (4.1 km)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Data</label>
+                        <input type="date" id="data" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Horário</label>
+                        <select id="hora" required>
+                            <option value="">Escolha o horário...</option>
+                            <option value="08:00">08:00</option>
+                            <option value="10:00">10:00</option>
+                            <option value="14:00">14:00</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-primary">Confirmar Agendamento</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('tab-home')" data-target="tab-home">
+            <span class="nav-icon">🏠</span>
+            Início
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-diag')" data-target="tab-diag">
+            <span class="nav-icon">🔍</span>
+            Diagnóstico
+        </button>
+        <button class="nav-item" onclick="switchTab('tab-agendar')" data-target="tab-agendar">
+            <span class="nav-icon">📅</span>
+            Agendar
+        </button>
+    </nav>
+
+    <script>
+        // Lógica para alternar entre as abas (Comportamento de App)
+        function switchTab(tabId) {
+            // Oculta todas as telas
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Remove a classe 'active' de todos os botões do menu inferior
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Mostra a tela selecionada
+            document.getElementById(tabId).style.display = 'block';
+            
+            // Marca o botão clicado como ativo
+            document.querySelector(`.nav-item[data-target="${tabId}"]`).classList.add('active');
+            
+            // Rola a tela para o topo suavemente
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Inicia o app na aba Home
+        switchTab('tab-home');
+
+        // Configura a data mínima do calendário para hoje
+        const dataInput = document.getElementById('data');
+        const hoje = new Date().toISOString().split('T')[0];
+        dataInput.min = hoje;
+
+        // Controle do formulário
+        document.getElementById('agendamentoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const oficina = document.getElementById('oficina').options[document.getElementById('oficina').selectedIndex].text;
+            const data = document.getElementById('data').value.split('-').reverse().join('/');
+            const hora = document.getElementById('hora').value;
+
+            alert(`✅ Sucesso!\n\nSeu agendamento foi confirmado para:\n${oficina}\nEm ${data} às ${hora}.`);
+            
+            this.reset();
+            switchTab('tab-home'); // Volta para a tela inicial após agendar
+        });
+    </script>
+</body>
+</html>
