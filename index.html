@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoCare - Protótipo Interativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <style>
+        body { background-color: #0f172a; font-family: 'Inter', sans-serif; }
+        /* Mudança para Laranja no Glow */
+        .glow-orange { box-shadow: 0 0 20px rgba(249, 115, 22, 0.4); }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        #map { height: 280px; z-index: 10; }
+        .leaflet-bottom { z-index: 100 !important; }
+        .map-icon-car { text-align: center; color: #3b82f6; font-size: 24px; }
+        /* Mudança de cor no ícone do mapa */
+        .map-icon-mechanic { text-align: center; color: #f97316; font-size: 20px; }
+        .map-icon-licensed { text-align: center; color: #fbbf24; font-size: 20px; }
+        
+        @keyframes radar {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-radar { animation: radar 2s linear infinite; }
+    </style>
+</head>
+<body class="flex justify-center bg-gray-900 min-h-screen">
+
+    <div class="w-full max-w-md bg-slate-900 text-white min-h-screen relative flex flex-col shadow-2xl overflow-hidden pb-20">
+        
+        <div id="scanner-overlay" class="absolute inset-0 bg-slate-900/95 backdrop-blur-md z-[100] hidden flex-col items-center justify-center">
+            <div class="relative flex items-center justify-center w-40 h-40 mb-8">
+                <div class="absolute inset-0 rounded-full border-t-4 border-orange-500 animate-radar opacity-80"></div>
+                <div class="absolute inset-2 rounded-full border-b-4 border-orange-400 animate-radar" style="animation-direction: reverse; animation-duration: 3s;"></div>
+                <div class="absolute inset-4 rounded-full border-l-4 border-blue-400 animate-radar opacity-50" style="animation-duration: 1.5s;"></div>
+                <i class="fa-solid fa-microchip text-5xl text-orange-400 animate-pulse"></i>
+            </div>
+            <h3 id="scanner-title" class="text-xl font-bold text-white tracking-widest uppercase mb-2 text-center">Conectando...</h3>
+            <p id="scanner-subtitle" class="text-sm text-gray-400 text-center px-8">Buscando dispositivo OBD2 via Bluetooth</p>
+            <div class="w-48 h-1 bg-slate-800 rounded-full mt-8 overflow-hidden">
+                <div id="scanner-progress" class="h-full bg-orange-500 w-0 transition-all duration-1000"></div>
+            </div>
+        </div>
+
+        <div id="screen-status" class="screen-content h-full overflow-y-auto">
+            <div class="p-6 pb-2 flex justify-between items-center">
+                <div>
+                    <h1 class="text-xs text-gray-400 tracking-wider font-semibold">STATUS DO VEÍCULO</h1>
+                    <h2 class="text-2xl font-bold mt-1">Olá, Carlos!</h2>
+                </div>
+                <div class="w-10 h-10 bg-slate-700 rounded-full flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-user text-gray-300"></i>
+                </div>
+            </div>
+
+            <div class="flex flex-col items-center justify-center mt-6 mb-8">
+                <div class="w-48 h-48 rounded-full border-8 border-slate-800 flex flex-col items-center justify-center relative glow-orange" style="border-top-color: #f97316; border-right-color: #f97316; border-left-color: #f97316; transform: rotate(-45deg);">
+                    <div style="transform: rotate(45deg);" class="flex flex-col items-center">
+                        <i class="fa-solid fa-car-side text-4xl text-orange-400 mb-1 mt-3"></i>
+                        <span class="text-gray-400 text-xs">Saúde</span>
+                        <span class="text-4xl font-bold text-white">92%</span>
+                    </div>
+                </div>
+                <p class="mt-6 text-orange-400 font-semibold tracking-wide text-xs uppercase">Tudo OK - Seu Golf está seguro</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 px-6">
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-car-battery text-orange-400 text-xl mb-1"></i>
+                    <span class="font-bold text-md">Bateria</span>
+                    <span class="text-[10px] text-gray-400">98% Excelente</span>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-oil-can text-orange-400 text-xl mb-1"></i>
+                    <span class="font-bold text-md">Óleo</span>
+                    <span class="text-[10px] text-gray-400">7.800km restante</span>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-dharmachakra text-gray-400 text-xl mb-1"></i>
+                    <span class="font-bold text-md">Pneus</span>
+                    <span class="text-[10px] text-gray-400 mt-1">32 PSI</span>
+                </div>
+                <div class="bg-slate-800 p-3 rounded-xl border border-slate-700 flex flex-col items-center text-center">
+                    <i class="fa-solid fa-circle-exclamation text-gray-400 text-xl mb-1"></i>
+                    <span class="font-bold text-md">Freios</span>
+                    <span class="text-[10px] text-gray-400 mt-1">Ótimo Estado</span>
+                </div>
+            </div>
+
+            <div class="px-6 mt-6 mb-6">
+                <button onclick="startScanner()" class="w-full py-3 rounded-full border border-orange-500 text-orange-400 font-bold tracking-wide hover:bg-orange-500 hover:text-slate-900 transition-colors">
+                    <i class="fa-brands fa-bluetooth mr-2"></i> Fazer Scanner OBD2
+                </button>
+            </div>
+        </div>
+
+        <div id="screen-mechanics" class="screen-content h-full overflow-y-auto hidden">
+            <div class="p-6">
+                <h1 class="text-xl font-bold mb-4">Mecânicos Próximos</h1>
+                <div class="relative mb-4">
+                    <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" placeholder="Pesquisar oficinas..." class="w-full bg-slate-800 text-white rounded-lg py-2 pl-10 pr-4 focus:outline-none border border-slate-700">
+                </div>
+                
+                <div id="map" class="w-full rounded-xl mb-4 border border-slate-700 overflow-hidden relative"></div>
+
+                <h2 class="text-sm font-semibold text-gray-400 mb-3">Oficinas encontradas</h2>
+
+                <div id="mechanics-list" class="space-y-3">
+                    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">TechCar Especializada</h3>
+                                <p class="text-xs text-gray-400">Importados, Eletrônica • ⭐ 5.0</p>
+                            </div>
+                            <div class="bg-yellow-900 text-yellow-400 text-[10px] px-2 py-1 rounded font-bold whitespace-nowrap">
+                                <i class="fa-solid fa-check-circle"></i> Licenciado
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3"><i class="fa-solid fa-location-dot mr-1"></i>Av. Goiás, 2500 • R$220/h</p>
+                        <button onclick="switchTab('schedule', 'TechCar Especializada')" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold text-orange-400 transition">Ver Detalhes e Agendar</button>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">Precision Mecânica</h3>
+                                <p class="text-xs text-gray-400">Geral, Freios • ⭐ 4.9</p>
+                            </div>
+                            <div class="bg-yellow-900 text-yellow-400 text-[10px] px-2 py-1 rounded font-bold whitespace-nowrap">
+                                <i class="fa-solid fa-check-circle"></i> Licenciado
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3"><i class="fa-solid fa-location-dot mr-1"></i>R. Central, 120 • R$180/h</p>
+                        <button onclick="switchTab('schedule', 'Precision Mecânica')" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold text-orange-400 transition">Ver Detalhes e Agendar</button>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">Centro Automotivo ABC</h3>
+                                <p class="text-xs text-gray-400">Suspensão, Pneus • ⭐ 4.3</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3"><i class="fa-solid fa-location-dot mr-1"></i>R. Amazonas, 300 • R$150/h</p>
+                        <button onclick="switchTab('schedule', 'Centro Automotivo ABC')" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold text-orange-400 transition">Ver Detalhes e Agendar</button>
+                    </div>
+
+                    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">Dr. Injeção 24h</h3>
+                                <p class="text-xs text-gray-400">Elétrica, Diagnóstico • ⭐ 4.6</p>
+                            </div>
+                            <div class="bg-yellow-900 text-yellow-400 text-[10px] px-2 py-1 rounded font-bold whitespace-nowrap">
+                                <i class="fa-solid fa-check-circle"></i> Licenciado
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3"><i class="fa-solid fa-location-dot mr-1"></i>R. Maranhão, 50 • R$210/h</p>
+                        <button onclick="switchTab('schedule', 'Dr. Injeção 24h')" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold text-orange-400 transition">Ver Detalhes e Agendar</button>
+                    </div>
+                    
+                    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">Mecânica São Caetano</h3>
+                                <p class="text-xs text-gray-400">Troca de Óleo, Revisão • ⭐ 4.6</p>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-3"><i class="fa-solid fa-location-dot mr-1"></i>R. Visconde de Inhaúma, 1200 • R$160/h</p>
+                        <button onclick="switchTab('schedule', 'Mecânica São Caetano')" class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-bold text-orange-400 transition">Ver Detalhes e Agendar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-schedule" class="screen-content h-full overflow-y-auto hidden">
+            <div class="p-6">
+                <div class="flex items-center mb-6">
+                    <button onclick="switchTab('mechanics')" class="text-gray-400 hover:text-white mr-4"><i class="fa-solid fa-chevron-left"></i></button>
+                    <div>
+                        <h1 class="text-lg font-bold">Agendar Serviço</h1>
+                        <p id="schedule-workshop-name" class="text-xs text-gray-400">Precision Mecânica</p>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold text-gray-400 mb-3">Selecione o Serviço</h3>
+                <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    <div onclick="selectService(this, 'Troca de Óleo')" class="service-card min-w-[100px] bg-slate-800 border border-slate-700 p-3 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer opacity-50 transition-all duration-200">
+                        <i class="fa-solid fa-oil-can text-gray-400 mb-2 service-icon transition-colors"></i>
+                        <span class="text-xs text-white">Troca de Óleo</span>
+                    </div>
+                    <div onclick="selectService(this, 'Revisão Geral')" class="service-card min-w-[100px] bg-slate-800 border border-slate-700 p-3 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer opacity-50 transition-all duration-200">
+                        <i class="fa-solid fa-wrench text-gray-400 mb-2 service-icon transition-colors"></i>
+                        <span class="text-xs text-white">Revisão Geral</span>
+                    </div>
+                    <div onclick="selectService(this, 'Elétrica')" class="service-card min-w-[100px] bg-slate-800 border border-slate-700 p-3 rounded-lg flex flex-col items-center justify-center text-center cursor-pointer opacity-50 transition-all duration-200">
+                        <i class="fa-solid fa-car-battery text-gray-400 mb-2 service-icon transition-colors"></i>
+                        <span class="text-xs text-white">Elétrica</span>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold text-gray-400 mb-3">Selecione a Data (Maio 2026)</h3>
+                <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    <div class="min-w-[60px] bg-slate-800 border border-slate-700 p-2 rounded-lg flex flex-col items-center justify-center opacity-40 cursor-not-allowed">
+                        <span class="text-[10px] text-gray-400">Seg</span>
+                        <span class="text-lg font-bold text-white">18</span>
+                    </div>
+                    
+                    <div onclick="selectDay(this, '19/05', 'Ter')" class="day-card min-w-[60px] bg-orange-500 border border-transparent p-2 rounded-lg flex flex-col items-center justify-center cursor-pointer text-slate-900 transition-all duration-200">
+                        <span class="text-[10px] font-semibold day-name text-slate-800">Ter</span>
+                        <span class="text-lg font-bold">19</span>
+                    </div>
+                    
+                    <div class="relative min-w-[60px] bg-slate-800 border border-red-900 p-2 rounded-lg flex flex-col items-center justify-center opacity-50 cursor-not-allowed" onclick="alert('Agenda lotada neste dia. Escolha outra data.')">
+                        <span class="text-[10px] text-gray-400">Qua</span>
+                        <span class="text-lg font-bold text-white">20</span>
+                        <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></div>
+                    </div>
+                    
+                    <div onclick="selectDay(this, '21/05', 'Qui')" class="day-card min-w-[60px] bg-slate-800 border border-slate-700 p-2 rounded-lg flex flex-col items-center justify-center cursor-pointer text-white transition-all duration-200 relative">
+                        <span class="text-[10px] text-gray-400 day-name">Qui</span>
+                        <span class="text-lg font-bold">21</span>
+                    </div>
+                    
+                    <div class="relative min-w-[60px] bg-slate-800 border border-red-900 p-2 rounded-lg flex flex-col items-center justify-center opacity-50 cursor-not-allowed" onclick="alert('Agenda lotada neste dia. Escolha outra data.')">
+                        <span class="text-[10px] text-gray-400">Sex</span>
+                        <span class="text-lg font-bold text-white">22</span>
+                        <div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500"></div>
+                    </div>
+                    
+                    <div onclick="selectDay(this, '23/05', 'Sáb')" class="day-card min-w-[60px] bg-slate-800 border border-slate-700 p-2 rounded-lg flex flex-col items-center justify-center cursor-pointer text-white transition-all duration-200 relative">
+                        <span class="text-[10px] text-gray-400 day-name">Sáb</span>
+                        <span class="text-lg font-bold">23</span>
+                    </div>
+                </div>
+
+                <h3 class="text-sm font-semibold text-gray-400 mb-3">Horários Disponíveis</h3>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <button onclick="selectTime(this)" class="time-btn bg-slate-800 border border-slate-700 py-2 rounded text-sm text-white hover:border-orange-400 transition-all"><span class="time-val">09:00</span> - <span class="time-day">Ter, 19/05</span></button>
+                    <button onclick="selectTime(this)" class="time-btn bg-slate-800 border border-slate-700 py-2 rounded text-sm text-white hover:border-orange-400 transition-all"><span class="time-val">11:30</span> - <span class="time-day">Ter, 19/05</span></button>
+                    <button onclick="selectTime(this)" class="time-btn bg-slate-800 border border-slate-700 py-2 rounded text-sm text-white hover:border-orange-400 transition-all"><span class="time-val">14:00</span> - <span class="time-day">Ter, 19/05</span></button>
+                    <button onclick="selectTime(this)" class="time-btn bg-slate-800 border border-slate-700 py-2 rounded text-sm text-white hover:border-orange-400 transition-all"><span class="time-val">16:30</span> - <span class="time-day">Ter, 19/05</span></button>
+                </div>
+
+                <button onclick="confirmSchedule()" class="w-full py-3 rounded-xl border border-orange-500 text-orange-400 font-bold tracking-wide hover:bg-orange-500 hover:text-slate-900 transition-colors glow-orange">
+                    Confirmar Agendamento
+                </button>
+            </div>
+        </div>
+
+        <div id="screen-history" class="screen-content h-full overflow-y-auto hidden">
+             <div class="p-6">
+                <h1 class="text-xl font-bold mb-4">Histórico & Documentos</h1>
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6 flex items-center shadow-lg">
+                    <i class="fa-solid fa-car text-3xl text-orange-400 mr-4"></i>
+                    <div>
+                        <h3 class="font-bold">VW Golf TSI 2020</h3>
+                        <p class="text-xs text-gray-400">Placa: BEE3A32</p>
+                    </div>
+                </div>
+                
+                <div class="relative border-l-2 border-slate-700 ml-3 pl-6 py-2">
+                    
+                    <div class="mb-8 relative">
+                        <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-yellow-500"></div>
+                        <p class="text-xs text-yellow-500 font-bold">Próximo: 19/Mai/26</p>
+                        <h4 class="font-bold text-white text-md">Agendado: Revisão Geral</h4>
+                        <p class="text-xs text-gray-400">TechCar Especializada</p>
+                    </div>
+
+                    <div class="mb-8 relative">
+                        <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-blue-400"></div>
+                        <p class="text-xs text-blue-400 font-bold">02/Abr/26</p>
+                        <h4 class="font-bold text-white text-md">Lavagem Completa & Cera</h4>
+                        <p class="text-xs text-gray-400">AutoSpa Premium (Nota fiscal salva)</p>
+                    </div>
+
+                    <div class="mb-8 relative">
+                        <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-orange-500"></div>
+                        <p class="text-xs text-orange-500 font-bold">12/Jan/26</p>
+                        <h4 class="font-bold text-white text-md">IPVA 2026 Pago</h4>
+                        <p class="text-xs text-gray-400">Comprovante SEFAZ salvo no App</p>
+                    </div>
+
+                    <div class="mb-8 relative">
+                        <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-purple-400"></div>
+                        <p class="text-xs text-purple-400 font-bold">10/Jan/26</p>
+                        <h4 class="font-bold text-white text-md">Renovação Seguro Auto</h4>
+                        <p class="text-xs text-gray-400">Apólice Porto Seguro ativa</p>
+                    </div>
+
+                    <div class="mb-8 relative">
+                        <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-orange-500"></div>
+                        <p class="text-xs text-orange-500 font-bold">15/Nov/25</p>
+                        <h4 class="font-bold text-white text-md">Troca de 4 Pneus + Alinhamento</h4>
+                        <p class="text-xs text-gray-400">Michelin Primacy 4 (Garantia de 5 anos)</p>
+                    </div>
+
+                    <div class="relative">
+                        <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-gray-500"></div>
+                        <p class="text-xs text-gray-400 font-bold">05/Out/25</p>
+                        <h4 class="font-bold text-white text-md">Revisão 40k km</h4>
+                        <p class="text-xs text-gray-400">AutoMax Serviços</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute bottom-0 w-full bg-slate-900 border-t border-slate-800 px-6 py-3 flex justify-between items-center z-50">
+            <div id="nav-status" onclick="switchTab('status')" class="nav-item flex flex-col items-center text-orange-400 cursor-pointer w-16">
+                <i class="fa-solid fa-gauge-high text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold">Status</span>
+            </div>
+            <div id="nav-mechanics" onclick="switchTab('mechanics')" class="nav-item flex flex-col items-center text-gray-500 hover:text-orange-200 transition-colors cursor-pointer w-16">
+                <i class="fa-solid fa-wrench text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold">Mecânicos</span>
+            </div>
+            <div id="nav-schedule" onclick="switchTab('schedule')" class="nav-item flex flex-col items-center text-gray-500 hover:text-orange-200 transition-colors cursor-pointer w-16">
+                <i class="fa-regular fa-calendar-check text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold">Agendar</span>
+            </div>
+            <div id="nav-history" onclick="switchTab('history')" class="nav-item flex flex-col items-center text-gray-500 hover:text-orange-200 transition-colors cursor-pointer w-16">
+                <i class="fa-solid fa-clock-rotate-left text-xl mb-1"></i>
+                <span class="text-[10px] font-semibold">Histórico</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        // --- NAVEGAÇÃO E MAPA ---
+        let map;
+        function switchTab(tabName, workshopName = null) {
+            if (tabName === 'schedule' && workshopName) {
+                document.getElementById('schedule-workshop-name').innerText = workshopName;
+            }
+            const screens = document.querySelectorAll('.screen-content');
+            screens.forEach(screen => screen.classList.add('hidden'));
+            document.getElementById('screen-' + tabName).classList.remove('hidden');
+
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                // Mudança de classes JS de verde para laranja
+                item.classList.remove('text-orange-400');
+                item.classList.add('text-gray-500');
+            });
+            const activeNav = document.getElementById('nav-' + tabName);
+            activeNav.classList.remove('text-gray-500');
+            activeNav.classList.add('text-orange-400');
+
+            if (tabName === 'mechanics') initializeMap();
+        }
+
+        function initializeMap() {
+            if (map) { map.invalidateSize(); return; }
+            map = L.map('map').setView([-23.6198, -46.5540], 14);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            
+            const createFaIcon = (className, iconName) => L.divIcon({ html: `<i class="${iconName}"></i>`, className: className, iconSize: [24, 24], iconAnchor: [12, 12] });
+            const licensedIcon = createFaIcon('map-icon-licensed', 'fa-solid fa-check-circle');
+            const standardIcon = createFaIcon('map-icon-mechanic', 'fa-solid fa-wrench');
+
+            L.marker([-23.6198, -46.5540], { icon: createFaIcon('map-icon-car', 'fa-solid fa-car-side') }).addTo(map).bindPopup('<b>Seu carro está aqui</b>').openPopup();
+            
+            const workshopsData = [
+                { name: 'Precision Mecânica', lat: -23.6212, lng: -46.5521, type: 'licensed' },
+                { name: 'Dr. Injeção 24h', lat: -23.6171, lng: -46.5532, type: 'licensed' },
+                { name: 'TechCar Especializada', lat: -23.6120, lng: -46.5600, type: 'licensed' },
+                { name: 'Centro Automotivo ABC', lat: -23.6250, lng: -46.5480, type: 'standard' },
+                { name: 'Mecânica São Caetano', lat: -23.6200, lng: -46.5650, type: 'standard' }
+            ];
+
+            workshopsData.forEach(ws => {
+                const icon = ws.type === 'licensed' ? licensedIcon : standardIcon;
+                L.marker([ws.lat, ws.lng], { icon: icon }).addTo(map).bindPopup(`<b>${ws.name}</b>`);
+            });
+        }
+
+        // --- LÓGICA DE SELEÇÃO DE AGENDAMENTO ---
+        let currentService = null;
+        let currentDay = '19/05';
+        let currentTimeName = 'Ter';
+        let currentTime = null;
+
+        function selectService(element, serviceName) {
+            currentService = serviceName;
+            document.querySelectorAll('.service-card').forEach(card => {
+                // Mudança de classes JS de verde para laranja
+                card.classList.remove('border-orange-400', 'opacity-100');
+                card.classList.add('border-slate-700', 'opacity-50');
+                card.querySelector('.service-icon').classList.remove('text-orange-400');
+                card.querySelector('.service-icon').classList.add('text-gray-400');
+            });
+            element.classList.remove('border-slate-700', 'opacity-50');
+            element.classList.add('border-orange-400', 'opacity-100');
+            element.querySelector('.service-icon').classList.remove('text-gray-400');
+            element.querySelector('.service-icon').classList.add('text-orange-400');
+        }
+
+        function selectDay(element, dayString, dayName) {
+            currentDay = dayString;
+            currentTimeName = dayName;
+            currentTime = null;
+
+            document.querySelectorAll('.day-card').forEach(card => {
+                // Mudança de classes JS de verde para laranja
+                card.classList.remove('bg-orange-500', 'text-slate-900', 'border-transparent');
+                card.classList.add('bg-slate-800', 'text-white', 'border-slate-700');
+                card.querySelector('.day-name').classList.remove('text-slate-800');
+                card.querySelector('.day-name').classList.add('text-gray-400');
+            });
+            element.classList.remove('bg-slate-800', 'text-white', 'border-slate-700');
+            element.classList.add('bg-orange-500', 'text-slate-900', 'border-transparent');
+            element.querySelector('.day-name').classList.remove('text-gray-400');
+            element.querySelector('.day-name').classList.add('text-slate-800');
+
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                // Mudança de classes JS de verde para laranja
+                btn.classList.remove('bg-orange-500', 'text-slate-900', 'font-bold', 'border-transparent');
+                btn.classList.add('bg-slate-800', 'border-slate-700', 'text-white');
+                btn.querySelector('.time-day').innerText = `${dayName}, ${dayString}`;
+            });
+        }
+
+        function selectTime(element) {
+            currentTime = element.querySelector('.time-val').innerText + ' - ' + element.querySelector('.time-day').innerText;
+            
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                // Mudança de classes JS de verde para laranja
+                btn.classList.remove('bg-orange-500', 'text-slate-900', 'font-bold', 'border-transparent');
+                btn.classList.add('bg-slate-800', 'border-slate-700', 'text-white');
+            });
+            element.classList.remove('bg-slate-800', 'border-slate-700', 'text-white');
+            element.classList.add('bg-orange-500', 'text-slate-900', 'font-bold', 'border-transparent');
+        }
+
+        function confirmSchedule() {
+            if (!currentService || !currentTime) {
+                alert('⚠️ Por favor, selecione qual serviço você deseja e um horário disponível antes de confirmar.');
+                return;
+            }
+            const workshopName = document.getElementById('schedule-workshop-name').innerText;
+            alert(`✅ Sucesso!\n\nSeu agendamento foi confirmado:\n\nOficina: ${workshopName}\nServiço: ${currentService}\nData e Hora: ${currentTime}`);
+            switchTab('status');
+        }
+
+        // --- ANIMAÇÃO DE SCANNER OBD2 ---
+        function startScanner() {
+            const overlay = document.getElementById('scanner-overlay');
+            const title = document.getElementById('scanner-title');
+            const subtitle = document.getElementById('scanner-subtitle');
+            const progress = document.getElementById('scanner-progress');
+            
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            title.innerText = "Conectando...";
+            subtitle.innerText = "Buscando dispositivo OBD2 via Bluetooth";
+            progress.style.width = "10%";
+
+            setTimeout(() => {
+                title.innerText = "Lendo Sensores...";
+                subtitle.innerText = "Acessando ECU, Módulo ABS e Airbags";
+                progress.style.width = "40%";
+            }, 1500);
+
+            setTimeout(() => {
+                title.innerText = "Analisando Dados...";
+                subtitle.innerText = "Verificando códigos de falha (DTC)";
+                progress.style.width = "80%";
+            }, 3000);
+
+            setTimeout(() => {
+                progress.style.width = "100%";
+                title.innerText = "Concluído!";
+                subtitle.innerText = "Diagnóstico finalizado com sucesso.";
+            }, 4500);
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+                alert("✅ Escaneamento concluído!\n\nNenhum código de falha (DTC) foi encontrado. \nO motor, sistema de injeção e bateria estão em perfeito estado.");
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
