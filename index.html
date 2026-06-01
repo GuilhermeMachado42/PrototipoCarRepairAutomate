@@ -9,13 +9,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <style>
         body { background-color: #0f172a; font-family: 'Inter', sans-serif; }
-        /* Mudança para Laranja no Glow */
         .glow-orange { box-shadow: 0 0 20px rgba(249, 115, 22, 0.4); }
         ::-webkit-scrollbar { width: 0px; background: transparent; }
         #map { height: 280px; z-index: 10; }
         .leaflet-bottom { z-index: 100 !important; }
         .map-icon-car { text-align: center; color: #3b82f6; font-size: 24px; }
-        /* Mudança de cor no ícone do mapa */
         .map-icon-mechanic { text-align: center; color: #f97316; font-size: 20px; }
         .map-icon-licensed { text-align: center; color: #fbbf24; font-size: 20px; }
         
@@ -28,7 +26,7 @@
 </head>
 <body class="flex justify-center bg-gray-900 min-h-screen">
 
-    <div class="w-full max-w-md bg-slate-900 text-white min-h-screen relative flex flex-col shadow-2xl overflow-hidden pb-20">
+    <div class="w-full max-w-md bg-slate-900 text-white h-[100dvh] relative flex flex-col shadow-2xl overflow-hidden pb-20">
         
         <div id="scanner-overlay" class="absolute inset-0 bg-slate-900/95 backdrop-blur-md z-[100] hidden flex-col items-center justify-center">
             <div class="relative flex items-center justify-center w-40 h-40 mb-8">
@@ -263,7 +261,6 @@
                 </div>
                 
                 <div class="relative border-l-2 border-slate-700 ml-3 pl-6 py-2">
-                    
                     <div class="mb-8 relative">
                         <div class="absolute -left-[33px] top-1 w-4 h-4 rounded-full bg-slate-900 border-2 border-yellow-500"></div>
                         <p class="text-xs text-yellow-500 font-bold">Próximo: 19/Mai/26</p>
@@ -306,7 +303,7 @@
                         <p class="text-xs text-gray-400">AutoMax Serviços</p>
                     </div>
                 </div>
-            </div>
+             </div>
         </div>
 
         <div class="absolute bottom-0 w-full bg-slate-900 border-t border-slate-800 px-6 py-3 flex justify-between items-center z-50">
@@ -344,7 +341,6 @@
 
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => {
-                // Mudança de classes JS de verde para laranja
                 item.classList.remove('text-orange-400');
                 item.classList.add('text-gray-500');
             });
@@ -389,7 +385,6 @@
         function selectService(element, serviceName) {
             currentService = serviceName;
             document.querySelectorAll('.service-card').forEach(card => {
-                // Mudança de classes JS de verde para laranja
                 card.classList.remove('border-orange-400', 'opacity-100');
                 card.classList.add('border-slate-700', 'opacity-50');
                 card.querySelector('.service-icon').classList.remove('text-orange-400');
@@ -407,7 +402,6 @@
             currentTime = null;
 
             document.querySelectorAll('.day-card').forEach(card => {
-                // Mudança de classes JS de verde para laranja
                 card.classList.remove('bg-orange-500', 'text-slate-900', 'border-transparent');
                 card.classList.add('bg-slate-800', 'text-white', 'border-slate-700');
                 card.querySelector('.day-name').classList.remove('text-slate-800');
@@ -419,7 +413,6 @@
             element.querySelector('.day-name').classList.add('text-slate-800');
 
             document.querySelectorAll('.time-btn').forEach(btn => {
-                // Mudança de classes JS de verde para laranja
                 btn.classList.remove('bg-orange-500', 'text-slate-900', 'font-bold', 'border-transparent');
                 btn.classList.add('bg-slate-800', 'border-slate-700', 'text-white');
                 btn.querySelector('.time-day').innerText = `${dayName}, ${dayString}`;
@@ -430,7 +423,6 @@
             currentTime = element.querySelector('.time-val').innerText + ' - ' + element.querySelector('.time-day').innerText;
             
             document.querySelectorAll('.time-btn').forEach(btn => {
-                // Mudança de classes JS de verde para laranja
                 btn.classList.remove('bg-orange-500', 'text-slate-900', 'font-bold', 'border-transparent');
                 btn.classList.add('bg-slate-800', 'border-slate-700', 'text-white');
             });
@@ -448,8 +440,13 @@
             switchTab('status');
         }
 
-        // --- ANIMAÇÃO DE SCANNER OBD2 ---
+        // --- ANIMAÇÃO DE SCANNER OBD2 COMPLETA E OTIMIZADA ---
+        let isScanning = false; 
+
         function startScanner() {
+            if (isScanning) return; 
+            isScanning = true;
+
             const overlay = document.getElementById('scanner-overlay');
             const title = document.getElementById('scanner-title');
             const subtitle = document.getElementById('scanner-subtitle');
@@ -483,8 +480,9 @@
             setTimeout(() => {
                 overlay.classList.add('hidden');
                 overlay.classList.remove('flex');
-                alert("✅ Escaneamento concluído!\n\nNenhum código de falha (DTC) foi encontrado. \nO motor, sistema de injeção e bateria estão em perfeito estado.");
-            }, 5000);
+                progress.style.width = "0%";
+                isScanning = false; 
+            }, 6000);
         }
     </script>
 </body>
